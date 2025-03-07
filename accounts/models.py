@@ -1,17 +1,17 @@
-from mongoengine import Document, StringField, EmailField, BooleanField, DateTimeField, ReferenceField, ListField, IntField, ImageField
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
-from datetime import datetime
+from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
-
-# User Manager (for MongoEngine)
-class UserManager:
+class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError("The Email field must be set")
-        email = email.lower()
-        user = User(email=email, **extra_fields)
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
         user.set_password(password)
-        user.save()
+        user.save(using=self._db)
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
@@ -20,102 +20,73 @@ class UserManager:
         extra_fields.setdefault("is_staff", True)
         return self.create_user(email, password, **extra_fields)
 
-
-# Custom User Model (MongoEngine)
-class User(AbstractBaseUser, Document):
-    meta = {'collection': 'users'}  # Define collection name in MongoDB
-
-    email = EmailField(unique=True, required=True)
-    username = StringField(max_length=50, unique=True, required=True)
-    country = StringField(max_length=100, default="")
-    is_active = BooleanField(default=True)
-    is_staff = BooleanField(default=False)
-    is_admin = BooleanField(default=False)
-    date_joined = DateTimeField(default=datetime.utcnow)
-    last_login = DateTimeField(default=datetime.utcnow)
-
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+class User(AbstractBaseUser, PermissionsMixin):
+    id = models.AutoField(primary_key=True)
+    email = models.EmailField(unique=True)
+    username = models.CharField(max_length=50, unique=True)
+    country = models.CharField(max_length=100, blank=True)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(auto_now_add=True)
+    last_login = models.DateTimeField(auto_now=True)
 
     objects = UserManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username'] 
 
     def __str__(self):
         return self.email
 
-
-# Profile Model
-class Profile(Document):
-    meta = {'collection': 'profiles'}
-
-    user = ReferenceField(User, required=True, unique=True)
-    profile_pic = StringField(default="profile_pics/default.png")  # Image stored as a URL
-    full_name = StringField(max_length=100, default="")
-    gender = StringField(choices=['male', 'female', 'other'], default="")
-    birthdate = DateTimeField(null=True)
-    country = StringField(max_length=100, default="")
-    allergies = StringField(default="")
-    caloric_goals = IntField(default=2000)
-    preferred_diet = ListField(StringField())  # Store diet names in a list
+class Profile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
+    profile_pic = models.ImageField(upload_to="profile_pics/", default="profile_pics/default.png")
+    full_name = models.CharField(max_length=100, blank=True)
+    gender = models.CharField(max_length=10, choices=[('male', 'Male'), ('female', 'Female'), ('other', 'Other')], blank=True)
+    birthdate = models.DateField(null=True, blank=True)
+    country = models.CharField(max_length=100, blank=True)
+    allergies = models.TextField(blank=True)
+    caloric_goals = models.IntegerField(default=2000)
+    preferred_diet = models.ManyToManyField('Diet', blank=True)
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
 
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
 
-# Diet Model
-class Diet(Document):
-    meta = {'collection': 'diets'}
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
 
-    name = StringField(max_length=50, required=True, unique=True)
+class Diet(models.Model):
+    name = models.CharField(max_length=50)
 
     def __str__(self):
         return self.name
 
-
-# Recipe Model
-class Recipe(Document):
-    meta = {'collection': 'recipes'}
-
-    user = ReferenceField(User, required=True)
-    title = StringField(max_length=100, required=True)
-    description = StringField()
-    ingredients = ListField(StringField())  # Store ingredients as a list
-    procedure = StringField()
-    cuisine = StringField()
-    diet_type = StringField()
-    allergens = ListField(StringField())  # Store allergens as a list
-    preparation_time = IntField()
-    cooking_time = IntField()
-    servings = IntField()
-    image = StringField()  # Store image as a URL or file path
-    calories = IntField()
-    protein = IntField()
-    fat = IntField()
-    carbs = IntField()
-    likes = IntField(default=0)
-    views = IntField(default=0)
+class Recipe(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="recipes")
+    title = models.CharField(max_length=100)
+    description = models.TextField()
 
     def __str__(self):
         return self.title
 
-
-# MealPlan Model
-class MealPlan(Document):
-    meta = {'collection': 'meal_plans'}
-
-    user = ReferenceField(User, required=True)
-    name = StringField(max_length=100, required=True)
-    details = StringField()
+class MealPlan(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="meal_plans")
+    name = models.CharField(max_length=100)
+    details = models.TextField()
 
     def __str__(self):
         return self.name
 
-
-# SavedRecipe Model
-class SavedRecipe(Document):
-    meta = {'collection': 'saved_recipes'}
-
-    user = ReferenceField(User, required=True)
-    recipe = ReferenceField(Recipe, required=True)
+class SavedRecipe(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="saved_recipes")
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.user.username} saved {self.recipe.title}"

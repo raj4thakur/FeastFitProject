@@ -78,29 +78,24 @@ WSGI_APPLICATION = 'feastfit.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 import urllib.parse
-import mongoengine
 username = "22adv3ari0016"
 password = urllib.parse.quote_plus("Neelesh@3003")
 
 # Add TLS options
 MONGO_URI = f"mongodb+srv://{username}:{password}@feastfitdb.orybr.mongodb.net/?retryWrites=true&w=majority&tls=true&tlsAllowInvalidCertificates=true"
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'djongo',
-#         'NAME': 'feastfit_database',
-#         'CLIENT': {
-#             'host': MONGO_URI
-#         }
-#     }
-# }
-mongoengine.connect(db="feastfit_database", host=MONGO_URI)
-
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.dummy"  # Use dummy engine
+    'default': {
+        'ENGINE': 'djongo',
+        'NAME': 'feastfit_database',
+        'CLIENT': {
+            'host': MONGO_URI
+        }
     }
 }
+
+
+
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
 
@@ -151,8 +146,6 @@ STATICFILES_DIRS = [
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-
 AUTH_USER_MODEL = 'accounts.User'
 
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
