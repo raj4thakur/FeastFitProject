@@ -1,121 +1,120 @@
-from django.shortcuts import render, redirect,get_object_or_404
+from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from .forms import RegistrationForm  # Ensure the form is imported
-# from .models import User  # Import the custom user model
+from django.contrib.auth.decorators import login_required
+from .forms import RegistrationForm, ProfileForm, ProfilePicForm, DietaryPreferencesForm
+from .models import User, Profile, Recipe, SavedRecipe, MealPlan
+from pymongo import MongoClient
 
+# -------------------- LOGIN VIEW --------------------
 def login_view(request):
-    error = None  # Initialize error variable
+    error = None
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
-        
+
         user = authenticate(request, email=email, password=password)
-        if user is not None:
+        if user:
             login(request, user)
-            return redirect('home:home')  # Replace 'home:home' with your actual home URL name
+            return redirect('home:home')  # Redirect to home page
         else:
             error = "Invalid email or password. Please try again."
 
     return render(request, 'accounts/login.html', {'error': error})
 
 
-# Register View
+# -------------------- REGISTER VIEW --------------------
 def register_view(request):
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
         if form.is_valid():
-            # Save the user and log them in
             user = form.save()
-            login(request, user)  # Automatically log the user in after registration
+            login(request, user)  # Auto login
             messages.success(request, 'Registration successful! Welcome to FeastFit.')
-            return redirect('home:home')  # Redirect to the home page
+            return redirect('home:home')
         else:
-            # Return the form with errors
             messages.error(request, 'Please fix the errors below.')
-            return render(request, 'accounts/register.html', {'form': form})
 
     else:
         form = RegistrationForm()
 
     return render(request, 'accounts/register.html', {'form': form})
 
-# Logout View
+
+# -------------------- LOGOUT VIEW --------------------
 def logout_view(request):
     logout(request)
     messages.success(request, 'You have been logged out.')
-    return redirect('home:home')  # Redirect to home page
+    return redirect('home:home')
 
 
-from django.contrib.auth.decorators import login_required
-from .models import Profile, Diet, Recipe, MealPlan, SavedRecipe
-from .forms import ProfileForm, ProfilePicForm, DietaryPreferencesForm
-from bson import ObjectId
+# -------------------- PROFILE VIEW --------------------
 @login_required
 def profile_view(request):
-    # Ensure profile exists or create it dynamically
-    profile, created = Profile.objects.get_or_create(user=request.user)
-    from pymongo import MongoClient
+    """Display user profile, including uploaded recipes."""
+    # Fetch user profile from MongoDB
+    profile = Profile.objects(user=request.user).first()
+    if not profile:
+        profile = Profile(user=request.user)
+        profile.save()
+
+    # MongoDB connection
     client = MongoClient('mongodb://localhost:27017/')
     db = client['FeastFit_DataBase']
     recipes_collection = db['feast_recipes_recipe']
-    user_id = int(request.user.id)
-    recipes = list(recipes_collection.find({"created_by_id":user_id}))
-    # diets = Diet.objects.all()
-    # saved_recipes = request.user.saved_recipes.all()
-    # meal_plans = request.user.meal_plans.all()
+
+    # Get recipes created by the user
+    user_id = str(request.user.id)  # Convert to string for MongoDB lookup
+    recipes = list(recipes_collection.find({"user_id": user_id}))
+
     context = {
         'user': request.user,
         'profile': profile,
-        # 'diets': diets,
         'recipes': recipes,
-        # 'saved_recipes': saved_recipes,
-        # 'meal_plans': meal_plans,
     }
     return render(request, 'accounts/profile.html', context)
 
 
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect
-from django.contrib import messages
-from .forms import ProfileForm
-
+# -------------------- UPDATE PROFILE --------------------
 @login_required
 def update_profile(request):
+    """Update user profile information."""
+    profile = Profile.objects(user=request.user).first()
+
     if request.method == 'POST':
-        print("POST data:", request.POST)
-        profile_form = ProfileForm(request.POST, instance=request.user.profile)
+        profile_form = ProfileForm(request.POST, instance=profile)
         if profile_form.is_valid():
             profile_form.save()
             messages.success(request, "Profile updated successfully!")
         else:
-            print("Form errors:", profile_form.errors)  # Debugging: log form errors
             messages.error(request, "Error updating profile. Please check your inputs.")
-        return redirect('accounts:profile')
-    else:
-        profile_form = ProfileForm(instance=request.user.profile)
 
-    return render(request, 'accounts/profile.html', {'profile_form': profile_form})
+    return redirect('accounts:profile')
 
 
-
-
+# -------------------- UPLOAD PROFILE PICTURE --------------------
 @login_required
 def upload_profile_pic(request):
+    """Upload or update user profile picture."""
+    profile = Profile.objects(user=request.user).first()
+
     if request.method == 'POST':
         new_pic = request.FILES.get('new_profile_pic')
         if new_pic:
-            request.user.profile.profile_pic = new_pic
-            request.user.profile.save()
+            profile.profile_pic = new_pic
+            profile.save()
             messages.success(request, 'Profile picture updated successfully.')
         else:
             messages.error(request, 'Please select a valid image.')
-        return redirect('accounts:profile') 
+
+    return redirect('accounts:profile')
 
 
+# -------------------- UPDATE DIETARY PREFERENCES --------------------
 @login_required
 def update_dietary_preferences(request):
-    profile, created = Profile.objects.get_or_create(user=request.user)
+    """Update dietary preferences."""
+    profile = Profile.objects(user=request.user).first()
 
     if request.method == 'POST':
         dietary_form = DietaryPreferencesForm(request.POST, instance=profile)
@@ -124,16 +123,22 @@ def update_dietary_preferences(request):
             messages.success(request, "Dietary preferences updated successfully!")
         else:
             messages.error(request, "Error updating dietary preferences.")
+
     return redirect('accounts:profile')
 
 
+# -------------------- PLACEHOLDER FUNCTIONS --------------------
 @login_required
 def feedback(request):
+    """User feedback submission (to be implemented)."""
     pass
 
+
 def help_support(request):
+    """Help and support page (to be implemented)."""
     pass
 
 
 def update_security_settings(request):
+    """Update security settings (to be implemented)."""
     pass

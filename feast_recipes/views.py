@@ -1,10 +1,23 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator
-from .models import Recipe,RecipeInteraction
+from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from pymongo import MongoClient
+import json
 
+from .models import Recipe, RecipeInteraction, RecipeRating
+from django.conf import settings
+
+# Connect to MongoDB
+client = MongoClient('mongodb://localhost:27017/') 
+db = client['FeastFit_DataBase']
+users_profiles = db['accounts_profile']
+
+
+# Recipes List View
 def recipes(request):
-    recipes_query = Recipe.objects.all()
+    recipes_query = Recipe.objects()
     search = request.GET.get('search', '')
     if search:
         recipes_query = recipes_query.filter(title__icontains=search)
@@ -13,32 +26,31 @@ def recipes(request):
         recipes_query = recipes_query.filter(cuisine__iexact=cuisine)
     ingredient = request.GET.get('ingredient', '')
     if ingredient:
-        recipes_query = recipes_query.filter(ingredients__icontains=ingredient)
+        recipes_query = recipes_query.filter(ingredients__contains=ingredient)
     diet = request.GET.get('diet', '')
     if diet:
         recipes_query = recipes_query.filter(diet_type__iexact=diet)
-    paginator = Paginator(recipes_query, 8) 
+
+    paginator = Paginator(list(recipes_query), 8) 
     page_number = request.GET.get('page')
     all_recipes = paginator.get_page(page_number)
 
-    client = MongoClient('mongodb://localhost:27017/') 
-    db = client['FeastFit_DataBase'] 
-    users_profiles=db['accounts_profile']
     user_profile_pic = None
     if request.user.is_authenticated:
-        # Find the profile associated with the logged-in user
         user_profile = users_profiles.find_one({'user_id': request.user.id})
-        if user_profile and 'profile_pic' in user_profile:  
+        if user_profile and 'profile_pic' in user_profile:
             user_profile_pic = user_profile['profile_pic']
+
     recipe_profiles = []
     for recipe in all_recipes:
-        user_profile = users_profiles.find_one({'user_id': recipe.created_by_id})
+        user_profile = users_profiles.find_one({'user_id': recipe.created_by.id})
         if user_profile:
             recipe_profiles.append({
-                'recipe_id': recipe.id,
+                'recipe_id': str(recipe.id),
                 'username': user_profile.get('full_name'),
                 'profile_pic': user_profile.get('profile_pic'),
             })
+
     context = {
         'all_recipes': all_recipes,
         'profile_pic': user_profile_pic,
@@ -46,10 +58,8 @@ def recipes(request):
     }
     return render(request, 'feast_recipes/recipes.html', context)
 
-from django.contrib import messages
-from django.shortcuts import render, redirect
-from .models import Recipe
 
+# Upload Recipe View
 def upload_recipe(request):
     if request.method == 'POST':
         title = request.POST.get('title')
@@ -57,8 +67,8 @@ def upload_recipe(request):
         procedure = request.POST.get('procedure')
         cuisine = request.POST.get('cuisine')
         diet_type = request.POST.get('diet_type')
-        ingredients = request.POST.get('ingredients')
-        allergens = request.POST.get('allergens', '')
+        ingredients = request.POST.get('ingredients').split(',')
+        allergens = request.POST.get('allergens', '').split(',')
         prep_time = request.POST.get('prep_time')
         cook_time = request.POST.get('cook_time')
         servings = request.POST.get('servings')
@@ -67,11 +77,11 @@ def upload_recipe(request):
         protein = request.POST.get('protein', None)
         fat = request.POST.get('fat', None)
         carbs = request.POST.get('carbs', None)
-        # Ensure the user is authenticated
+
         if not request.user.is_authenticated:
             messages.error(request, "You need to be logged in to upload a recipe.")
-            return redirect('accounts:login')  # Redirect to login page if user is not authenticated
-        # Save to the database
+            return redirect('accounts:login')
+
         recipe = Recipe(
             title=title,
             description=description,
@@ -80,66 +90,70 @@ def upload_recipe(request):
             diet_type=diet_type,
             ingredients=ingredients,
             allergens=allergens,
-            preparation_time=prep_time,
-            cooking_time=cook_time,
-            servings=servings,
-            image=image,
-            calories=calories,
-            protein=protein,
-            fat=fat,
-            carbs=carbs,
-            created_by=request.user  # Use the logged-in user for created_by
+            preparation_time=int(prep_time),
+            cooking_time=int(cook_time),
+            servings=int(servings),
+            image=str(image) if image else None,
+            calories=int(calories) if calories else None,
+            protein=float(protein) if protein else None,
+            fat=float(fat) if fat else None,
+            carbs=float(carbs) if carbs else None,
+            created_by=request.user
         )
 
         recipe.save()
         messages.success(request, "Recipe uploaded successfully!")
-        return redirect('home:home')  # Redirect to a list of recipes or another appropriate page
-    return render(request, 'feast_recipes/upload_recipe.html',)
+        return redirect('home:home')
+
+    return render(request, 'feast_recipes/upload_recipe.html')
 
 
-from django.conf import settings
-from django.shortcuts import render
-from django.shortcuts import render, get_object_or_404
-from .models import Recipe  # Assuming you have a Recipe model in your Django app
+# Recipe Content View
 def recipe_content(request, recipe_id):
-    # Fetch the recipe from the database using the recipe ID
-    recipe = get_object_or_404(Recipe, id=recipe_id)
-    # Increment the view count by 1 each time the recipe page is accessed
+    recipe = Recipe.objects(id=recipe_id).first()
+    if not recipe:
+        return JsonResponse({"error": "Recipe not found"}, status=404)
+
     recipe.views += 1
     recipe.save()
-    # Pre-process the data
-    recipe.steps = recipe.procedure.split("\r\n")
-    recipe.ingredients_list = recipe.ingredients.split("\r\n")
-    recipe.allergens_list = recipe.allergens.split(", ")
-    # Return the recipe to be rendered in the template
-    return render(request, 'feast_recipes/recipe_content.html', {'recipe': recipe, 'MEDIA_URL': settings.MEDIA_URL})
+
+    return render(request, 'feast_recipes/recipe_content.html', {
+        'recipe': recipe,
+        'MEDIA_URL': settings.MEDIA_URL
+    })
 
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
-from .db import interactions_collection  # Your MongoDB interactions collection
-
+# Like Recipe API
 @csrf_exempt
 def like_recipe(request, recipe_id):
     if request.method == "POST":
-        recipe = get_object_or_404(Recipe, id=recipe_id)
-        interaction, created = RecipeInteraction.objects.get_or_create(user=request.user, recipe=recipe)
+        recipe = Recipe.objects(id=recipe_id).first()
+        if not recipe:
+            return JsonResponse({"success": False, "error": "Recipe not found"})
 
-        # Toggle Like
+        interaction = RecipeInteraction.objects(user=request.user, recipe=recipe).first()
+        if not interaction:
+            interaction = RecipeInteraction(user=request.user, recipe=recipe)
+
         interaction.toggle_like()
 
         return JsonResponse({"success": True, "liked": interaction.liked, "likes": recipe.likes})
 
     return JsonResponse({"success": False})
 
+
+# Save Recipe API
 @csrf_exempt
 def save_recipe(request, recipe_id):
     if request.method == "POST":
-        recipe = get_object_or_404(Recipe, id=recipe_id)
-        interaction, created = RecipeInteraction.objects.get_or_create(user=request.user, recipe=recipe)
+        recipe = Recipe.objects(id=recipe_id).first()
+        if not recipe:
+            return JsonResponse({"success": False, "error": "Recipe not found"})
 
-        # Toggle Save
+        interaction = RecipeInteraction.objects(user=request.user, recipe=recipe).first()
+        if not interaction:
+            interaction = RecipeInteraction(user=request.user, recipe=recipe)
+
         interaction.toggle_save()
 
         return JsonResponse({"success": True, "saved": interaction.saved})
@@ -147,11 +161,12 @@ def save_recipe(request, recipe_id):
     return JsonResponse({"success": False})
 
 
+# Increment View Count API
 def increment_view_count(request, recipe_id):
-    recipe = get_object_or_404(Recipe, id=recipe_id)
-    recipe.increase_views()
+    recipe = Recipe.objects(id=recipe_id).first()
+    if not recipe:
+        return JsonResponse({"success": False, "error": "Recipe not found"})
+
+    recipe.views += 1
+    recipe.save()
     return JsonResponse({'status': 'success', 'views': recipe.views})
-
-
-def save_recipe():
-    pass
