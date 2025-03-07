@@ -3,3 +3,4 @@ djongo
 gunicorn
 pymongo
 whitenoise
+pytz
