@@ -1,6 +1,8 @@
 Django
-djongo
+djongo==1.3.6
 gunicorn
-pymongo
 whitenoise
 pytz
+pymongo[srv]
+dnspython
+mongoengine

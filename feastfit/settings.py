@@ -84,22 +84,22 @@ password = urllib.parse.quote_plus("Neelesh@3003")
 # Add TLS options
 MONGO_URI = f"mongodb+srv://{username}:{password}@feastfitdb.orybr.mongodb.net/?retryWrites=true&w=majority&tls=true&tlsAllowInvalidCertificates=true"
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'djongo',
-#         'NAME': 'feastfit_database',
-#         'CLIENT': {
-#             'host': MONGO_URI
-#         }
-#     }
-# }
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / "db.sqlite3",
+        'ENGINE': 'djongo',
+        'NAME': 'feastfit_database',
+        'CLIENT': {
+            'host': MONGO_URI
+        }
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / "db.sqlite3",
+#     }
+# }
 
 
 # Password validation
