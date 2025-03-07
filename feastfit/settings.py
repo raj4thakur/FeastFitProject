@@ -25,7 +25,7 @@ SECRET_KEY = 'klxm)3o3=16%a6rw+o-n3*sb-jshq_j+xu%bsiji^4*&yb72ij'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["127.0.0.1",'https://feastfitproject.onrender.com']
+ALLOWED_HOSTS = ["127.0.0.1",'https://feastfitproject.onrender.com','feastfitproject.onrender.com']
 
 
 
