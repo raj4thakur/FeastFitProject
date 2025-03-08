@@ -23,22 +23,25 @@ def login_view(request):
 # Register View
 def register_view(request):
     if request.method == 'POST':
+        print("✅ Form submitted with data:", request.POST)  # Debugging
+        
         form = RegistrationForm(request.POST)
         if form.is_valid():
-            # Save the user and log them in
+            print("✅ Form is valid!")  # Debugging
+            
             user = form.save()
-            login(request, user)  # Automatically log the user in after registration
+            login(request, user)
             messages.success(request, 'Registration successful! Welcome to FeastFit.')
-            return redirect('home:home')  # Redirect to the home page
+            return redirect('home:home')
         else:
-            # Return the form with errors
+            print("❌ Form errors:", form.errors)  # Debugging
             messages.error(request, 'Please fix the errors below.')
-            return render(request, 'accounts/register.html', {'form': form})
 
     else:
         form = RegistrationForm()
 
     return render(request, 'accounts/register.html', {'form': form})
+
 
 # Logout View
 def logout_view(request):

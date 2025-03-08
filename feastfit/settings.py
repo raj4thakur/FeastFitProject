@@ -87,9 +87,9 @@ MONGO_URI = f"mongodb+srv://{username}:{password}@feastfitdb.orybr.mongodb.net/?
 DATABASES = {
     'default': {
         'ENGINE': 'djongo',
-        'NAME': 'feastfit_database',
+        'NAME': 'feastfit_database1',
         'CLIENT': {
-            'host': MONGO_URI
+            'host': 'localhost'
         }
     }
 }

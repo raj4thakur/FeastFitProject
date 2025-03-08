@@ -21,7 +21,7 @@ class UserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 class User(AbstractBaseUser, PermissionsMixin):
-    id = models.AutoField(primary_key=True)
+    id = models.BigAutoField(primary_key=True) 
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=50, unique=True)
     country = models.CharField(max_length=100, blank=True)
@@ -80,7 +80,6 @@ class MealPlan(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="meal_plans")
     name = models.CharField(max_length=100)
     details = models.TextField()
-
     def __str__(self):
         return self.name
 

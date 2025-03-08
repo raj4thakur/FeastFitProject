@@ -27,14 +27,20 @@ class RegistrationForm(forms.Form):
         confirm_password = cleaned_data.get("confirm_password")
 
         if password != confirm_password:
+            print("❌ Passwords do not match")  # Debugging
             raise ValidationError("Passwords do not match")
 
         email = cleaned_data.get("email")
         if get_user_model().objects.filter(email=email).exists():
+            print("❌ Email already registered")  # Debugging
             raise ValidationError("Email is already registered.")
+
+        print("✅ Validation passed!")  # Debugging
         return cleaned_data
 
+
     def save(self):
+        print("✅ Saving user to database")  # Debugging
         user = get_user_model().objects.create_user(
             username=self.cleaned_data['username'],
             email=self.cleaned_data['email'],
@@ -42,7 +48,9 @@ class RegistrationForm(forms.Form):
         )
         user.country = self.cleaned_data['country']
         user.save()
+        print("✅ User saved:", user)  # Debugging
         return user
+
 
 
 
