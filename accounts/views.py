@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect,get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .forms import RegistrationForm  # Ensure the form is imported
-# from .models import User  # Import the custom user model
+from .models import User  # Import the custom user model
 
 def login_view(request):
     error = None  # Initialize error variable
