@@ -8,27 +8,28 @@
     <meta name="description" content="FeastFit - Profile page for managing recipes, preferences, and account settings.">
     <title>FeastFit - Profile</title>
     <link rel="stylesheet" href="{% static 'css/profile.css' %}">
+    <link rel="stylesheet" href="{% static 'css/header.css' %}">
     <script src="{% static 'js/profile.js' %}" defer></script>
 </head>
 
 <body>
-    <!-- Header -->
     <header>
         <div class="header-container">
-            <a href="/" class="logo-link" aria-label="Navigate to Home">
+            <a href="/" class="logo-link">
                 <div class="logo">
                     <span>FeastFit</span>
-                    <p>RecipeHub - Healthy and Tasty</p>
+                    <p>Recipe and Diet Planner</p>
                 </div>
             </a>
-            <nav class="nav-container" aria-label="Main navigation">
+            <nav class="nav-container">
                 <ul class="nav-links">
-                    <li><a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a></li>
-                    <li><a href="{% url 'accounts:register' %}" class="{% if request.path == '/accounts/register/' %}active{% endif %}">Register</a></li>
-                    <li><a href="/recipes" class="{% if request.path == '/recipes/' %}active{% endif %}">Recipes</a></li>
-                    <li><a href="{% url 'feast_recipes:upload_recipe' %}" class="{% if request.path == '/upload/' %}active{% endif %}">Upload Recipe</a></li>
-                    <li><a href="/about" class="{% if request.path == '/about/' %}active{% endif %}">About</a></li>
-                    <li><a href="/contact" class="{% if request.path == '/contact/' %}active{% endif %}">Contact</a></li>
+                    <li><a href="/" class="active">Home</a></li>
+                    <li><a href="{% url 'accounts:login' %}">SignIn</a></li>
+                    <li><a href="/recipes">Recipes</a></li>
+                    <li><a href="{% url 'feast_recipes:upload_recipe' %}">Upload Recipe</a></li>
+                    <li><a href="/about">About</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                    <input type="text" placeholder="Search Recipe..." class="search-bar">
                 </ul>
             </nav>
             <div class="profile-container">
