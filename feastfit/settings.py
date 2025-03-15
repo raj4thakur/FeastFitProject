@@ -87,20 +87,12 @@ MONGO_URI = f"mongodb+srv://{username}:{password}@feastfitdb.orybr.mongodb.net/?
 DATABASES = {
     'default': {
         'ENGINE': 'djongo',
-        'NAME': 'feastfit_database1',
+        'NAME': 'feastfit_database',
         'CLIENT': {
-            'host': 'localhost'
+            'host': MONGO_URI
         }
     }
 }
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / "db.sqlite3",
-#     }
-# }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
