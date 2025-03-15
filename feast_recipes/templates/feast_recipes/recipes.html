@@ -88,7 +88,7 @@
                     </a>
                     <button class="like-button {% if recipe.liked %}liked{% endif %}" 
                         data-recipe-id="{{ recipe.id }}" 
-                        data-url="{% url 'like_recipe' recipe.id %}">
+                        {% comment %} data-url="{% url 'like_recipe' recipe.id %}"> {% endcomment %}
                         <span class="like-icon">{% if recipe.liked %}❤️{% else %}🤍{% endif %}</span>
                         <span class="like-count">{{ recipe.likes }}</span>
                     </button>
@@ -127,7 +127,7 @@
                             </button>
                             <button class="save-button {% if recipe.is_saved %}saved{% endif %}" 
                                 data-recipe-id="{{ recipe.id }}" 
-                                data-url="{% url 'save_recipe' recipe.id %}">
+                                {% comment %} data-url="{% url 'save_recipe' recipe.id %}"> {% endcomment %}
                                 <i class="fas fa-bookmark"></i> Save
                             </button>
                         </div>
