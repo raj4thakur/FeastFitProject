@@ -1,34 +1,4 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
 
-body {
-    font-family: 'Georgia', serif;
-    background-color: #f7f7f7;
-    color: #333;
-    line-height: 1.6;
-    overflow-x: hidden;
-}
-
-/* Header */
-header {
-    position: sticky;
-    top: 0;
-    background: linear-gradient(90deg, #1a5276, #f39c12, #8e44ad);
-    padding: 20px 0;
-    z-index: 100;
-    text-align: center;
-    color: white;
-    font-size: 2rem;
-    font-weight: bold;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-header span {
-    color: #e74c3c;
-}
 
 /* Hero Section */
 .hero {
