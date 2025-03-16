@@ -7,8 +7,8 @@ def home(request):
     recipes = list(recipes_collection.find().limit(8))  # Convert cursor to list for Django templates
 
     # Fetch interactions from the Django database for the logged-in user
-    interactions = RecipeInteraction.objects.filter(user=request.user)
-    interaction_dict = {str(interaction.recipe.id): interaction for interaction in interactions}  # Match MongoDB ID with Django model ID
+    # interactions = RecipeInteraction.objects.filter(user=request.user)
+    # interaction_dict = {str(interaction.recipe.id): interaction for interaction in interactions}  # Match MongoDB ID with Django model ID
 
     # Loop through MongoDB recipes and add `liked` and `is_saved` based on interactions
     for recipe in recipes:
@@ -16,11 +16,11 @@ def home(request):
         recipe['_id'] = str(recipe['_id'])  # Ensure MongoDB _id is a string for comparison
 
         # Get the interaction for the recipe, if it exists
-        interaction = interaction_dict.get(recipe['_id'])
+        # interaction = interaction_dict.get(recipe['_id'])
 
         # Assign the `liked` and `saved` flags based on the interaction or default to False
-        recipe['liked'] = interaction.liked if interaction else False
-        recipe['is_saved'] = interaction.saved if interaction else False
+        # recipe['liked'] = interaction.liked if interaction else False
+        # recipe['is_saved'] = interaction.saved if interaction else False
 
     print("Got recipes for home template!")
 
