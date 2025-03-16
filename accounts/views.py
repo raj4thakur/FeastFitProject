@@ -13,7 +13,7 @@ def login_view(request):
         user = authenticate(request, email=email, password=password)
         if user is not None:
             login(request, user)
-            return redirect('home:home ')  # Replace 'home:home' with your actual home URL name
+            return redirect('home:home')  # Replace 'home:home' with your actual home URL name
         else:
             error = "Invalid email or password. Please try again."
 
