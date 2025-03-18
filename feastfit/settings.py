@@ -78,21 +78,22 @@ WSGI_APPLICATION = 'feastfit.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 import urllib.parse
+
 username = "22adv3ari0016"
 password = urllib.parse.quote_plus("Neelesh@3003")
-
-# Add TLS options
-MONGO_URI = f"mongodb+srv://{username}:{password}@feastfitdb.orybr.mongodb.net/?retryWrites=true&w=majority&tls=true&tlsAllowInvalidCertificates=true"
 
 DATABASES = {
     'default': {
         'ENGINE': 'djongo',
         'NAME': 'feastfit_database',
         'CLIENT': {
-            'host': MONGO_URI
+            'host': f"mongodb+srv://{username}:{password}@feastfitdb.orybr.mongodb.net/?retryWrites=true&w=majority",
+            'tls': True,
+            'tlsAllowInvalidCertificates': False  # Ensure TLS security
         }
     }
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
@@ -113,7 +114,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',  # Ensure this is included
+    'accounts.backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 # Internationalization
@@ -154,3 +156,8 @@ ACCOUNT_USERNAME_REQUIRED = False
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 3600
+
