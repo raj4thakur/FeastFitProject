@@ -3,18 +3,27 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .forms import RegistrationForm  # Ensure the form is imported
 from .models import User  # Import the custom user model
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login
+from django.contrib import messages
+from accounts.models import User
 
 def login_view(request):
-    error = None  # Initialize error variable
+    error = None
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
-        
+
+        print(f"🔍 Debug: Attempting login with email={email}, password={password}")  # Debugging
+
         user = authenticate(request, email=email, password=password)
+
         if user is not None:
+            print("✅ Authentication successful:", user)  # Debugging
             login(request, user)
-            return redirect('home:home')  # Replace 'home:home' with your actual home URL name
+            return redirect('home:home')
         else:
+            print("❌ Authentication failed")  # Debugging
             error = "Invalid email or password. Please try again."
 
     return render(request, 'accounts/login.html', {'error': error})
@@ -26,14 +35,22 @@ def register_view(request):
         form = RegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)
-            messages.success(request, 'Registration successful! Welcome to FeastFit.')
-            return redirect('home:home')
-        else:
-            messages.error(request, 'Please fix the errors below.')
+
+            # Authenticate again to ensure the correct backend is assigned
+            user = authenticate(request, email=user.email, password=request.POST['password'])
+
+            if user:
+                login(request, user)
+                messages.success(request, 'Registration successful! Welcome to FeastFit.')
+                return redirect('home:home')
+            else:
+                messages.error(request, "There was an issue logging in. Please try logging in manually.")
+
     else:
         form = RegistrationForm()
+
     return render(request, 'accounts/register.html', {'form': form})
+
 
 # Logout View
 def logout_view(request):

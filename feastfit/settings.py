@@ -114,8 +114,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTHENTICATION_BACKENDS = [
-    'accounts.backends.EmailBackend',
-    'django.contrib.auth.backends.ModelBackend',
+    'accounts.backends.EmailBackend',  # Your custom email-based backend
+    'django.contrib.auth.backends.ModelBackend',  # Keep default as a fallback
 ]
 
 # Internationalization
